@@ -1,8 +1,11 @@
+#encoding="utf-8"
 import tkinter
 import random
 import threading
 import time
 import os
+from  settings import drawsettings
+
 #初始化窗口
 root=tkinter.Tk()
 root.title("随机名单")
@@ -21,6 +24,8 @@ second.place(x=180,y=200,width=150,height=100)
 
 third = tkinter.Label(root,text='',font = ("宋体", 20,"normal"))
 third.place(x=180,y=300,width=150,height=100)
+
+
 #定义抽奖i
 i=-1
 
@@ -42,7 +47,7 @@ def readStudents():
     #os.path.abspath(__file__)
     students.clear()
     print(os.getcwd())
-    f=open('../lottery/cjq/list.txt','rb')
+    f=open('list.txt','rb')
     for line in f:
         students.append(line.decode().replace("\r\n",""))
     print(students)
@@ -68,11 +73,17 @@ def nextRound():
     readStudents()
     studentsin=[]
     i=-1  
-    
+def opensettings():
+        set=drawsettings()
+        set.writeform()
+        set.start()
+
 butStop=tkinter.Button(root,text='停止',command=btnStopClick)
 butStop.place(x=160, y=30, width=80, height=20)
 butNext=tkinter.Button(root,text="下一轮",command=nextRound)
 butNext.place(x=310,y=30,width=80,height=20)
+butSet=tkinter.Button(root,text="设置",command=opensettings)
+butSet.place(x=390,y=30,width=80,height=20)
 #启动主程序
 readStudents()
 root.mainloop()
