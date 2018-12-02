@@ -14,8 +14,11 @@ class drawsettings():
         self.tvgrid=ttk.Treeview(self.root,show="headings",height=18,columns=("轮次","抽取人数","同时抽取人数","轮次显示名称"))
         self.tvgrid.place(x=0,y=0)
         self.tvgrid.bind("<Double-1>",self.set_cell_value)
+        self.reset=tk.BooleanVar()
         self.lbl=ttk.Checkbutton(self.root,text="下一轮是否重置")
+        #self.lbl=ttk.checkbutton(self.root,text="下一轮是否重置")
         self.lbl.place(x=350,y=20)
+        self.lbl.state(['!alternate'])
         self.addrow=tk.Button(self.root,text="增行",command=self.addNewrow)
         self.addrow.place(x=350,y=50,width=80,height=20)
         self.delrow=tk.Button(self.root,text="删行",command=self.delRow)
@@ -81,7 +84,7 @@ class drawsettings():
         if cn==0:
             return
         rn=int(str(row).replace("I",""))
-        entryedit=tk.Text(self.root,width=10+(cn-1)*16,height=1)
+        entryedit=tk.Entry(self.root,width=10+(cn-1)*16)
         padx=0
         if cn==2:
             padx=50
@@ -92,7 +95,7 @@ class drawsettings():
         txtwidth=80 if cn==2 else 100
         entryedit.place(x=6+padx,y=6+rn*20,width=txtwidth)
         def saveedit():
-            self.tvgrid.set(item,column=column,value=entryedit.get(0.0,"end"))
+            self.tvgrid.set(item,column=column,value=entryedit.get())
             entryedit.destroy()
             okb.destroy()
         okb=ttk.Button(self.root,text="OK",width=4,command=saveedit)
@@ -109,10 +112,12 @@ class drawsettings():
         randomnum=[]   #每次抽取人数
         if(len(x)>0):
             for i in range(len(x)):
-                rounds.append(str(i)+":"+x[i][1])
-                roundsname.append(x[i][3])
-                randomnum.append(x[i][2])
-        roundreset=1 if self.lbl.selected else 0
+                values=self.tvgrid.item(x[i],"values")
+                rounds.append(str(i+1)+":"+values[1])
+                roundsname.append(values[3])
+                randomnum.append(values[2])
+        #self.reset.get()
+        roundreset=1 if self.lbl.instate(['selected']) else 0
         return rounds,roundsname,roundreset,randomnum
     
     def writeform(self):
@@ -125,17 +130,41 @@ class drawsettings():
         self.tvgrid.heading("同时抽取人数",text="每次抽取人数")
         self.tvgrid.heading("轮次显示名称",text="轮次显示名称")
         roundcount,roundname,roundreset,randomnum=self.loadsettings()
+        #self.reset.set(True if roundreset==1 else False)
+        if roundreset==1:
+            self.lbl.state(['selected'])
         for i in range(len(roundcount)):
             self.tvgrid.insert("","end",values=(roundcount[i].split(":")[0],\
             roundcount[i].split(":")[1],randomnum[i],roundname[i]))
-        self.lbl.selected=False if roundreset==0 else True
         
         
     def savesettings(self):
         #将配置写入文件
         roundcount,roundname,roundreset,randomnum=self.readfromform()
-        with open("settings.txt","w") as f:
-            pass
+        with open("settings.txt","w+",encoding="utf-8") as f:
+            '''
+            for line in f:
+                rowstring=line.replace("\r\n","")
+                if self.startwith(rowstring,"#"):
+                    continue
+                if self.startwith(rowstring,"roundcount"):
+                    line="roundcount="+str(roundcount).replace("[","").replace("]","")+"\r\n"
+                if self.startwith(rowstring,"roundname"):
+                    line="roundname="+str(roundname).replace("[","").replace("]","")+"\r\n"
+                if self.startwith(rowstring,randomnum):
+                    line="randomnum="+str(randomnum).replace("[","").replace("]","")+"\r\n"
+                if self.startwith(rowstring,"roundreset"):
+                    line="roundreset="+str(roundreset)
+            '''
+            f.writelines("#设置轮数及每轮抽取人数\n")
+            f.writelines("roundcount="+str(roundcount).replace("[","").replace("]","").replace("'","").replace('"',"")+"\n")
+            f.writelines("#设置单轮每次抽取同时抽取数\n")
+            f.writelines("randomnum="+str(randomnum).replace("[","").replace("]","").replace("'","").replace('"',"")+"\n")
+            f.writelines("#设置每轮的友好名称\n")
+            f.writelines("roundname="+str(roundname).replace("[","").replace("]","").replace("'","").replace('"',"")+"\n")
+            f.writelines("#设置每轮结束后已被抽取者是否放回\n")
+            f.writelines("roundreset="+str(roundreset))
+            f.flush()
 
     def reloadsettings(self):
         #放弃保存并重新加载
